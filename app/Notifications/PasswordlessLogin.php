@@ -5,16 +5,15 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Lang;
 
-class NotifyOnFormSubmit extends Notification
+class PasswordlessLogin extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct()
+    public function __construct(public string $link)
     {
         //
     }
@@ -35,11 +34,9 @@ class NotifyOnFormSubmit extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->subject(Lang::get('20 years Nato in Bulgaria Conference - confirmed submition'))
-                    ->line(Lang::get('This is a notification e-mail.'))
-                    ->line(Lang::get('You have submited a form as an Author/Co-author for the conference.'))
-                    ->action(Lang::get('Check Profile'), url('/en/profile'))
-                    ->line(Lang::get('Thank you for participating in the conference!'));
+                    ->line('Click here to instantly login to VA-Conference.')
+                    ->action('Log in', url($this->link))
+                    ->line('Thank you for using our application!');
     }
 
     /**

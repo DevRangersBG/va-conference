@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use App\Notifications\PasswordlessLogin;
+use App\Providers\CustomRouteServiceProvider;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -23,13 +26,30 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(): RedirectResponse
     {
-        $request->authenticate();
+        request()->validate(['email' => 'required']);
 
-        $request->session()->regenerate();
+        $user = User::where(['email' => request('email')])->first();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        if (! $user) {
+            return back()->withErrors(['email' => 'No matching account found.']);
+        }
+
+        $link = URL::temporarySignedRoute('login.token', now()->addHour(), ['user' => $user->id]);
+
+        $user->notify(new PasswordlessLogin($link));
+
+        return back()->with('status', 'Please check your email for a login link!');
+    }
+
+    public function loginViaToken(User $user)
+    {
+        Auth::login($user);
+
+        request()->session()->regenerate();
+
+        return redirect(CustomRouteServiceProvider::HOME);
     }
 
     /**
